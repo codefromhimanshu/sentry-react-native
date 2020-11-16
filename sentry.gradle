@@ -160,12 +160,22 @@ gradle.projectsEvaluated {
 /** Compose lookup map of build variants - to - outputs. */
 def extractReleasesInfo() {
     def releases = [:]
-
+    def hashStdOut = new ByteArrayOutputStream()
+    def commitHash = null
+    exec {
+        if (System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows')) {
+            commandLine 'cmd', '/c', 'git rev-parse --verify HEAD'
+        } else {
+            commandLine 'sh', '-c', 'git rev-parse --verify HEAD'
+        }
+        standardOutput = hashStdOut
+    }
+    commitHash =  hashStdOut.toString().trim()
     android.applicationVariants.each { variant ->
 
         variant.outputs.each { output ->
             def versionCode = output.getVersionCode()
-            def releaseName = "${variant.getApplicationId()}@${variant.getVersionName()}+${versionCode}"
+            def releaseName = "${versionCode}@${variant.getVersionName()}:${commitHash}"
             def variantName = variant.getName()
             def outputName = output.getName()
             if (releases[variantName] == null) {
